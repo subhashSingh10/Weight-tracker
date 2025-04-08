@@ -3,35 +3,209 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Weight Loss Tracker (Complete)</title>
+  <title>My Weight Loss Journey - Enhanced</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f9fafb;
+    }
+    .progress-ring {
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.5s ease-in-out;
+    }
+    .shadow-card {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .tab-highlight {
+      background: linear-gradient(to right, #3b82f6, #2563eb);
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+    .card-hover:hover {
+      transform: translateY(-2px);
+      transition: transform 0.2s ease-in-out;
+    }
+    .animate-pulse-slow {
+      animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+    .nav-indicator {
+      position: absolute;
+      height: 3px;
+      width: 100%;
+      bottom: 0;
+      left: 0;
+      background: linear-gradient(to right, #3b82f6, #2563eb);
+      border-radius: 9999px;
+      transition: transform 0.3s ease;
+    }
+    .chart-bar {
+      transition: height 0.5s ease, background-color 0.3s ease;
+    }
+    .chart-bar:hover {
+      background-color: #2563eb;
+    }
+    .checkbox-circle {
+      transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+    }
+    .checkbox-circle.checked {
+      transform: scale(1.1);
+    }
+    .exercise-card {
+      border-left: 4px solid transparent;
+      transition: border-color 0.3s ease, background-color 0.3s ease;
+    }
+    .exercise-card:hover {
+      background-color: #f3f4f6;
+    }
+    .meal-card {
+      transition: all 0.3s ease;
+    }
+    .meal-card:hover {
+      transform: translateX(3px);
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
 </head>
 <body>
   <div id="root"></div>
   
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
     
-    // Icon Components (simplified with emojis)
-    const Icon = ({ type }) => {
+    // Better Icons using Font Awesome
+    const Icon = ({ type, className }) => {
       const icons = {
-        calendar: "📅",
-        trending: "📈",
-        food: "🍽️",
-        workout: "💪",
-        clock: "⏰",
-        chart: "📊",
-        weight: "⚖️",
-        plan: "📝",
+        calendar: "fa-calendar-alt",
+        trending: "fa-chart-line",
+        food: "fa-utensils",
+        workout: "fa-dumbbell",
+        clock: "fa-clock",
+        chart: "fa-chart-pie",
+        weight: "fa-weight",
+        plan: "fa-clipboard-list",
+        home: "fa-home",
+        target: "fa-bullseye",
+        water: "fa-glass-water",
+        fire: "fa-fire",
+        star: "fa-star",
+        check: "fa-check",
+        time: "fa-hourglass-half",
+        apple: "fa-apple-whole",
+        carrot: "fa-carrot",
+        egg: "fa-egg",
+        run: "fa-person-running",
+        certificate: "fa-certificate",
+        plus: "fa-plus",
+        minus: "fa-minus",
+        "info-circle": "fa-circle-info"
       };
-      return <span className="mr-2">{icons[type] || "📋"}</span>;
+      
+      return <i className={`fas ${icons[type] || "fa-list"} ${className || ""}`}></i>;
+    };
+
+    // Progress Ring Component
+    const ProgressRing = ({ radius, stroke, progress, color }) => {
+      const normalizedRadius = radius - stroke / 2;
+      const circumference = normalizedRadius * 2 * Math.PI;
+      const strokeDashoffset = circumference - progress / 100 * circumference;
+      
+      return (
+        <svg height={radius * 2} width={radius * 2} className="progress-ring">
+          <circle
+            stroke="#e5e7eb"
+            fill="transparent"
+            strokeWidth={stroke}
+            r={normalizedRadius}
+            cx={radius}
+            cy={radius}
+          />
+          <circle
+            stroke={color}
+            fill="transparent"
+            strokeWidth={stroke}
+            strokeDasharray={circumference + ' ' + circumference}
+            style={{ strokeDashoffset }}
+            strokeLinecap="round"
+            r={normalizedRadius}
+            cx={radius}
+            cy={radius}
+            className="progress-ring-circle"
+          />
+        </svg>
+      );
+    };
+    
+    // Day Progress Component
+    const DayProgress = ({ completedTasks, totalTasks }) => {
+      const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+      
+      return (
+        <div className="flex flex-col items-center justify-center">
+          <div className="relative">
+            <ProgressRing 
+              radius={40} 
+              stroke={8} 
+              progress={percentage} 
+              color="#10b981" 
+            />
+            <div className="absolute inset-0 flex items-center justify-center text-lg font-bold text-gray-700">
+              {percentage}%
+            </div>
+          </div>
+          <div className="mt-2 text-sm text-gray-600">Today's progress</div>
+        </div>
+      );
+    };
+
+    // Trend Arrow Component
+    const TrendArrow = ({ current, previous }) => {
+      if (!previous) return null;
+      
+      const diff = current - previous;
+      const isUp = diff > 0;
+      const isDown = diff < 0;
+      
+      return (
+        <span className={`ml-1 text-sm ${isDown ? 'text-green-500' : isUp ? 'text-red-500' : 'text-gray-400'}`}>
+          <i className={`fas fa-arrow-${isDown ? 'down' : isUp ? 'up' : 'right'}`}></i>
+          {diff !== 0 && <span className="ml-1">{Math.abs(diff).toFixed(1)}</span>}
+        </span>
+      );
     };
     
     const WeightLossTracker = () => {
-      // Load data from localStorage or use defaults
+      // Local storage management
       const loadFromStorage = (key, defaultValue) => {
         const stored = localStorage.getItem(key);
         if (stored) {
@@ -45,7 +219,7 @@
         return defaultValue;
       };
       
-      // State management
+      // State management with defaults
       const [activeTab, setActiveTab] = useState(loadFromStorage('activeTab', 'dashboard'));
       const [weight, setWeight] = useState(loadFromStorage('currentWeight', '85'));
       const [weightEntries, setWeightEntries] = useState(loadFromStorage('weightEntries', [
@@ -58,7 +232,9 @@
       const [isWeekday, setIsWeekday] = useState(true);
       const [mealPlanSubTab, setMealPlanSubTab] = useState('schedule');
       const [exercisePlanSubTab, setExercisePlanSubTab] = useState('beginner');
-    
+      const [waterIntake, setWaterIntake] = useState(loadFromStorage('waterIntake', {}));
+      const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+      
       // Save data to localStorage when it changes
       useEffect(() => {
         localStorage.setItem('activeTab', JSON.stringify(activeTab));
@@ -67,7 +243,8 @@
         localStorage.setItem('targetWeight', JSON.stringify(targetWeight));
         localStorage.setItem('completedMeals', JSON.stringify(completedMeals));
         localStorage.setItem('completedWorkouts', JSON.stringify(completedWorkouts));
-      }, [activeTab, weight, weightEntries, targetWeight, completedMeals, completedWorkouts]);
+        localStorage.setItem('waterIntake', JSON.stringify(waterIntake));
+      }, [activeTab, weight, weightEntries, targetWeight, completedMeals, completedWorkouts, waterIntake]);
     
       // Check if selected date is weekday or weekend
       useEffect(() => {
@@ -117,6 +294,17 @@
         });
       };
     
+      // Update water intake
+      const updateWaterIntake = (amount) => {
+        setWaterIntake(prev => {
+          const newState = { ...prev };
+          const key = selectedDate;
+          const currentAmount = prev[key] || 0;
+          newState[key] = Math.max(0, currentAmount + amount);
+          return newState;
+        });
+      };
+    
       // Check if a meal is completed
       const isMealCompleted = (meal) => {
         return completedMeals[`${selectedDate}-${meal}`] || false;
@@ -125,6 +313,11 @@
       // Check if a workout is completed
       const isWorkoutCompleted = (workout) => {
         return completedWorkouts[`${selectedDate}-${workout}`] || false;
+      };
+    
+      // Get water intake for selected date
+      const getWaterIntake = () => {
+        return waterIntake[selectedDate] || 0;
       };
     
       // Calculate progress
@@ -142,9 +335,48 @@
         return Math.min(Math.max((actualLoss / goalLoss) * 100, 0), 100);
       };
     
+      // Get the current weight
+      const getCurrentWeight = () => {
+        if (weightEntries.length === 0) return 0;
+        const sorted = [...weightEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+        return sorted[0].weight;
+      };
+    
+      // Get the previous weight
+      const getPreviousWeight = () => {
+        if (weightEntries.length < 2) return null;
+        const sorted = [...weightEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+        return sorted[1].weight;
+      };
+    
+      // Calculate total tasks and completed tasks for the day
+      const calculateDayProgress = () => {
+        const meals = isWeekday ? weekdayMeals : weekendMeals;
+        const workouts = isWeekday ? weekdayWorkouts : weekendWorkouts;
+        
+        const totalTasks = meals.length + workouts.length;
+        let completedTasks = 0;
+        
+        meals.forEach(meal => {
+          if (isMealCompleted(meal.name)) completedTasks++;
+        });
+        
+        workouts.forEach(workout => {
+          if (isWorkoutCompleted(workout.name)) completedTasks++;
+        });
+        
+        return { completedTasks, totalTasks };
+      };
+    
       // Format date for display
       const formatDate = (dateString) => {
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+      };
+    
+      // Format short date
+      const formatShortDate = (dateString) => {
+        const options = { month: 'short', day: 'numeric' };
         return new Date(dateString).toLocaleDateString(undefined, options);
       };
     
@@ -256,322 +488,627 @@
           notes: "Use moderate weights. Rest 30-45 seconds between sets for higher intensity."
         }
       };
+      
+      // Calculate daily calorie needs and intake
+      const calculateCalorieNeeds = () => {
+        // This is a simplified calculation
+        const currentWeight = getCurrentWeight();
+        const isMale = true; // In a real app, this would be user data
+        const age = 30; // In a real app, this would be user data
+        const height = 175; // In cm, in a real app, this would be user data
+        const activityLevel = 1.55; // Moderately active, 3-5 days per week
+        
+        // BMR calculation using Mifflin-St Jeor Equation
+        let bmr;
+        if (isMale) {
+          bmr = 10 * currentWeight + 6.25 * height - 5 * age + 5;
+        } else {
+          bmr = 10 * currentWeight + 6.25 * height - 5 * age - 161;
+        }
+        
+        // Total Daily Energy Expenditure
+        const tdee = bmr * activityLevel;
+        
+        // For weight loss, typically subtract 500 calories from TDEE
+        const targetCalories = tdee - 500;
+        
+        return Math.round(targetCalories);
+      };
+      
+      // Get suggested meal for the time of day
+      const getSuggestedMeal = (mealType) => {
+        if (!mealOptions[mealType]) return null;
+        
+        // Get a consistent suggestion for the day
+        const date = new Date(selectedDate);
+        const seed = date.getDate() + (date.getMonth() * 31);
+        const index = seed % mealOptions[mealType].length;
+        
+        return mealOptions[mealType][index];
+      };
     
+      // Get today's meals
+      const getTodaysMeals = () => {
+        return isWeekday ? weekdayMeals : weekendMeals;
+      };
+      
+      // Get today's workouts
+      const getTodaysWorkouts = () => {
+        return isWeekday ? weekdayWorkouts : weekendWorkouts;
+      };
+      
+      // Calculate total tasks completed percentage
+      const { completedTasks, totalTasks } = calculateDayProgress();
+      const calorieNeeds = calculateCalorieNeeds();
+    
+      // Helper to format time periods
+      const formatTime = (timeRange) => {
+        if (!timeRange.includes('-')) return timeRange;
+        
+        const [start, end] = timeRange.split('-');
+        return (
+          <span>
+            <span className="text-gray-800">{start}</span>
+            <span className="text-gray-500">-</span>
+            <span className="text-gray-800">{end}</span>
+          </span>
+        );
+      };
+      
+      // Navigation items
+      const navItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+        { id: 'weight', label: 'Weight', icon: 'weight' },
+        { id: 'plan', label: 'Plan', icon: 'plan' }
+      ];
+      
       return (
         <div className="flex flex-col h-screen bg-gray-100">
-          {/* Header */}
-          <header className="bg-blue-600 text-white p-4">
-            <h1 className="text-2xl font-bold text-center">My Weight Loss Tracker</h1>
+          {/* Stylish Header */}
+          <header className="gradient-bg text-white p-4 shadow-lg">
+            <div className="container mx-auto">
+              <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold flex items-center">
+                  <Icon type="trending" className="mr-2" /> 
+                  <span>Weight Loss Journey</span>
+                </h1>
+                <div className="text-white text-opacity-90 text-sm">
+                  {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                </div>
+              </div>
+            </div>
           </header>
     
-          {/* Main Content */}
-          <main className="flex-1 overflow-auto p-4">
+          {/* Main Content with Container */}
+          <main className="flex-1 overflow-auto p-4 container mx-auto max-w-3xl">
+            {/* Dashboard */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                {/* Date Selector */}
-                <div className="bg-white rounded-lg shadow p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold flex items-center">
-                      <Icon type="calendar" /> Date
-                    </h2>
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      className="border rounded p-2"
-                    />
-                  </div>
-                  <p className="text-lg font-medium text-center text-blue-600">
-                    {formatDate(selectedDate)} ({isWeekday ? 'Weekday' : 'Weekend'})
-                  </p>
-                </div>
-    
-                {/* Progress Overview */}
-                <div className="bg-white rounded-lg shadow p-4">
-                  <h2 className="text-lg font-semibold flex items-center mb-4">
-                    <Icon type="trending" /> Progress Overview
-                  </h2>
-                  <div className="flex justify-between items-center mb-2">
-                    <span>Starting Weight: {weightEntries.length > 0 ? weightEntries.sort((a, b) => new Date(a.date) - new Date(b.date))[0].weight : 0} kg</span>
-                    <span>Target Weight: {targetWeight} kg</span>
-                  </div>
-                  <div className="mb-2">
-                    <span>Current Weight: {weightEntries.length > 0 ? weightEntries.sort((a, b) => new Date(b.date) - new Date(a.date))[0].weight : 0} kg</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-4">
-                    <div 
-                      className="bg-green-500 h-4 rounded-full" 
-                      style={{ width: `${calculateProgress()}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-right mt-1 text-sm text-gray-600">
-                    {calculateProgress().toFixed(1)}% complete
-                  </div>
-                </div>
-    
-                {/* Today's Meals */}
-                <div className="bg-white rounded-lg shadow p-4">
-                  <h2 className="text-lg font-semibold flex items-center mb-4">
-                    <Icon type="food" /> Today's Meals
-                  </h2>
-                  <div className="space-y-3">
-                    {(isWeekday ? weekdayMeals : weekendMeals).map((meal, index) => (
-                      <div key={index}>
-                        <div 
-                          className={`flex justify-between items-center p-2 rounded-lg cursor-pointer ${
-                            isMealCompleted(meal.name) ? 'bg-green-100' : 'bg-gray-50'
-                          }`}
-                          onClick={() => toggleMeal(meal.name)}
-                        >
-                          <div>
-                            <div className="font-medium">{meal.name}</div>
-                            <div className="text-sm text-gray-500">{meal.time}</div>
-                          </div>
-                          <div className={`h-6 w-6 rounded-full border flex items-center justify-center ${
-                            isMealCompleted(meal.name) 
-                              ? 'bg-green-500 border-green-500 text-white' 
-                              : 'border-gray-300'
-                          }`}>
-                            {isMealCompleted(meal.name) && <span>✓</span>}
-                          </div>
-                        </div>
-                        
-                        {/* Suggested meal for this time slot */}
-                        {mealOptions[meal.name] && (
-                          <div className="mt-1 ml-2 pl-2 border-l-2 border-blue-200 text-sm">
-                            <p className="font-medium text-blue-600">Suggested: {mealOptions[meal.name][Math.floor(Math.random() * mealOptions[meal.name].length)].name}</p>
-                          </div>
-                        )}
+                {/* Date and Progress Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Date Selector */}
+                  <div className="bg-white rounded-xl shadow-card p-4 relative overflow-hidden transition-all duration-300 card-hover">
+                    <div className="flex justify-between items-center mb-3">
+                      <h2 className="text-lg font-semibold flex items-center text-gray-800">
+                        <Icon type="calendar" className="mr-2 text-blue-600" /> Date
+                      </h2>
+                      <button 
+                        onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                      >
+                        <Icon type={isDatePickerOpen ? "minus" : "plus"} />
+                      </button>
+                    </div>
+                    
+                    {isDatePickerOpen && (
+                      <div className="mb-3">
+                        <input
+                          type="date"
+                          value={selectedDate}
+                          onChange={(e) => setSelectedDate(e.target.value)}
+                          className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        />
                       </div>
-                    ))}
+                    )}
+                    
+                    <p className="text-center py-2 px-3 rounded-lg bg-blue-50 text-blue-800 font-medium">
+                      {formatDate(selectedDate)}
+                    </p>
+                    <div className="text-center mt-2 text-sm text-gray-500">
+                      {isWeekday ? 'Weekday Schedule' : 'Weekend Schedule'}
+                    </div>
+                    
+                    {/* Visual date indicator */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+                  </div>
+                  
+                  {/* Day Progress */}
+                  <div className="bg-white rounded-xl shadow-card p-4 flex flex-col items-center justify-center transition-all duration-300 card-hover">
+                    <DayProgress 
+                      completedTasks={completedTasks}
+                      totalTasks={totalTasks}
+                    />
+                    <div className="mt-2 text-center">
+                      <div className="text-sm text-gray-500">
+                        {completedTasks} of {totalTasks} tasks completed
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Water Tracker */}
+                  <div className="bg-white rounded-xl shadow-card p-4 relative overflow-hidden transition-all duration-300 card-hover">
+                    <h2 className="text-lg font-semibold flex items-center text-gray-800 mb-3">
+                      <Icon type="water" className="mr-2 text-blue-600" /> Water Intake
+                    </h2>
+                    
+                    <div className="flex justify-center items-center mb-3">
+                      <div className="text-3xl font-bold text-blue-600">{getWaterIntake()}</div>
+                      <div className="ml-2 text-gray-500">glasses</div>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <button 
+                        onClick={() => updateWaterIntake(-1)}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-800 p-2 rounded-lg flex items-center justify-center w-12 h-12 transition-colors"
+                      >
+                        <Icon type="minus" />
+                      </button>
+                      <button 
+                        onClick={() => updateWaterIntake(1)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg flex items-center justify-center w-12 h-12 transition-colors"
+                      >
+                        <Icon type="plus" />
+                      </button>
+                    </div>
+                    
+                    <div className="text-center mt-2 text-sm text-gray-500">
+                      Goal: 8 glasses
+                    </div>
+                    
+                    {/* Visual water indicator */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1">
+                      <div 
+                        className="h-full bg-blue-500"
+                        style={{ width: `${Math.min(getWaterIntake() / 8 * 100, 100)}%` }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
-    
-                {/* Today's Workouts */}
-                <div className="bg-white rounded-lg shadow p-4">
-                  <h2 className="text-lg font-semibold flex items-center mb-4">
-                    <Icon type="workout" /> Today's Workouts
+                
+                {/* Weight Progress Overview */}
+                <div className="bg-white rounded-xl shadow-card p-4 transition-all duration-300">
+                  <h2 className="text-lg font-semibold flex items-center text-gray-800 mb-4">
+                    <Icon type="trending" className="mr-2 text-blue-600" /> Progress Overview
                   </h2>
+                  
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="text-sm text-gray-500 mb-1">Starting</div>
+                      <div className="text-xl font-bold text-gray-800">
+                        {weightEntries.length > 0 ? weightEntries.sort((a, b) => new Date(a.date) - new Date(b.date))[0].weight : 0} 
+                        <span className="text-sm font-normal text-gray-500">kg</span>
+                      </div>
+                    </div>
+                    
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <div className="text-sm text-gray-500 mb-1">Current</div>
+                      <div className="text-xl font-bold text-blue-800">
+                        {getCurrentWeight()} 
+                        <span className="text-sm font-normal text-gray-500">kg</span>
+                        <TrendArrow current={getCurrentWeight()} previous={getPreviousWeight()} />
+                      </div>
+                    </div>
+                    
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-sm text-gray-500 mb-1">Target</div>
+                      <div className="text-xl font-bold text-green-800">
+                        {targetWeight} 
+                        <span className="text-sm font-normal text-gray-500">kg</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Progress bar */}
+                  <div className="relative pt-1 mb-1">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-semibold inline-block text-blue-600">
+                          {calculateProgress().toFixed(1)}% complete
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-semibold inline-block text-blue-600">
+                          {(getCurrentWeight() - parseFloat(targetWeight)).toFixed(1)} kg to go
+                        </span>
+                      </div>
+                    </div>
+                    <div className="overflow-hidden h-2 mt-2 mb-1 text-xs flex rounded-full bg-gray-200">
+                      <div 
+                        style={{ width: `${calculateProgress()}%` }}
+                        className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500 ease-in-out"
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  {/* Calorie target */}
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                    <div className="flex items-center">
+                      <Icon type="fire" className="text-orange-500 mr-2" />
+                      <span className="text-gray-700">Daily Calorie Target</span>
+                    </div>
+                    <div className="font-bold text-gray-800">{calorieNeeds} calories</div>
+                  </div>
+                </div>
+                
+                {/* Today's Meals */}
+                <div className="bg-white rounded-xl shadow-card p-4 transition-all duration-300">
+                  <h2 className="text-lg font-semibold flex items-center text-gray-800 mb-4">
+                    <Icon type="food" className="mr-2 text-blue-600" /> Today's Meals
+                  </h2>
+                  
                   <div className="space-y-3">
-                    {(isWeekday ? weekdayWorkouts : weekendWorkouts).map((workout, index) => (
-                      <div key={index}>
-                        <div 
-                          className={`flex justify-between items-center p-2 rounded-lg cursor-pointer ${
-                            isWorkoutCompleted(workout.name) ? 'bg-green-100' : 'bg-gray-50'
-                          }`}
-                          onClick={() => toggleWorkout(workout.name)}
-                        >
-                          <div>
-                            <div className="font-medium">{workout.name}</div>
-                            <div className="text-sm text-gray-500">{workout.time}</div>
+                    {getTodaysMeals().map((meal, index) => {
+                      const suggested = getSuggestedMeal(meal.name);
+                      const completed = isMealCompleted(meal.name);
+                      
+                      return (
+                        <div key={index} className="meal-card">
+                          <div 
+                            className={`flex justify-between items-center p-3 rounded-lg cursor-pointer transition-all ${
+                              completed ? 'bg-green-50 border-green-100' : 'bg-gray-50 hover:bg-gray-100'
+                            }`}
+                            onClick={() => toggleMeal(meal.name)}
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-800">{meal.name}</div>
+                              <div className="text-sm text-gray-500">{formatTime(meal.time)}</div>
+                            </div>
+                            
+                            {suggested && (
+                              <div className="hidden md:block flex-1 px-3">
+                                <div className="text-sm font-medium text-blue-700">{suggested.name}</div>
+                                <div className="text-xs text-gray-500">{suggested.calories} calories</div>
+                              </div>
+                            )}
+                            
+                            <div className={`h-6 w-6 rounded-full border flex items-center justify-center transition-all checkbox-circle ${
+                              completed ? 'bg-green-500 border-green-500 text-white checked' : 'border-gray-300'
+                            }`}>
+                              {completed && <Icon type="check" className="text-xs" />}
+                            </div>
                           </div>
-                          <div className={`h-6 w-6 rounded-full border flex items-center justify-center ${
-                            isWorkoutCompleted(workout.name) 
-                              ? 'bg-green-500 border-green-500 text-white' 
-                              : 'border-gray-300'
-                          }`}>
-                            {isWorkoutCompleted(workout.name) && <span>✓</span>}
-                          </div>
-                        </div>
-                        
-                        {/* Exercise suggestions based on the workout */}
-                        <div className="mt-1 ml-2 pl-2 border-l-2 border-green-200 text-sm">
-                          {workout.name.includes("Morning") || workout.name.includes("Extended") ? (
-                            <p className="font-medium text-green-600">
-                              Today's focus: {Math.random() > 0.5 ? "Strength Training" : "Cardio"} 
-                              <span className="block mt-1 text-gray-600">Check the Plan tab for details</span>
-                            </p>
-                          ) : workout.name.includes("Evening Walk") ? (
-                            <p className="font-medium text-green-600">
-                              20-30 min walk at moderate pace
-                              <span className="block mt-1 text-gray-600">Target 3,000-4,000 steps</span>
-                            </p>
-                          ) : (
-                            <p className="font-medium text-green-600">
-                              Light stretching or Yoga
-                              <span className="block mt-1 text-gray-600">Focus on recovery</span>
-                            </p>
+                          
+                          {/* Mobile meal suggestion */}
+                          {suggested && (
+                            <div className="md:hidden mt-1 ml-3 pl-2 border-l-2 border-blue-200 text-sm">
+                              <div className="font-medium text-blue-700">{suggested.name}</div>
+                              <div className="text-xs text-gray-500">{suggested.calories} calories</div>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* Today's Workouts */}
+                <div className="bg-white rounded-xl shadow-card p-4 transition-all duration-300">
+                  <h2 className="text-lg font-semibold flex items-center text-gray-800 mb-4">
+                    <Icon type="workout" className="mr-2 text-blue-600" /> Today's Workouts
+                  </h2>
+                  
+                  <div className="space-y-3">
+                    {getTodaysWorkouts().map((workout, index) => {
+                      const completed = isWorkoutCompleted(workout.name);
+                      const isMorningWorkout = workout.name.includes("Morning") || workout.name.includes("Extended");
+                      const isEveningWalk = workout.name.includes("Evening Walk");
+                      
+                      return (
+                        <div key={index} className="exercise-card" style={{ borderLeftColor: completed ? '#10b981' : 'transparent' }}>
+                          <div 
+                            className={`flex justify-between items-center p-3 rounded-lg cursor-pointer transition-all ${
+                              completed ? 'bg-green-50' : 'bg-gray-50 hover:bg-gray-100'
+                            }`}
+                            onClick={() => toggleWorkout(workout.name)}
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-800">{workout.name}</div>
+                              <div className="text-sm text-gray-500">{formatTime(workout.time)}</div>
+                            </div>
+                            
+                            <div className={`h-6 w-6 rounded-full border flex items-center justify-center transition-all checkbox-circle ${
+                              completed ? 'bg-green-500 border-green-500 text-white checked' : 'border-gray-300'
+                            }`}>
+                              {completed && <Icon type="check" className="text-xs" />}
+                            </div>
+                          </div>
+                          
+                          {/* Workout details */}
+                          <div className="mt-1 ml-3 pl-2 border-l-2 border-green-200 text-sm">
+                            {isMorningWorkout ? (
+                              <div>
+                                <span className="font-medium text-green-700">
+                                  Today's focus: {new Date(selectedDate).getDate() % 2 === 0 ? "Strength Training" : "Cardio"} 
+                                </span>
+                                <span className="block mt-1 text-xs text-gray-600">Check the Plan tab for details</span>
+                              </div>
+                            ) : isEveningWalk ? (
+                              <div>
+                                <span className="font-medium text-green-700">
+                                  20-30 min walk at moderate pace
+                                </span>
+                                <span className="block mt-1 text-xs text-gray-600">Target 3,000-4,000 steps</span>
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="font-medium text-green-700">
+                                  Light stretching or Yoga
+                                </span>
+                                <span className="block mt-1 text-xs text-gray-600">Focus on recovery</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
             )}
-    
+            
+            {/* Weight Tab */}
             {activeTab === 'weight' && (
               <div className="space-y-6">
-                <div className="bg-white rounded-lg shadow p-4">
-                  <h2 className="text-lg font-semibold mb-4">Weight Tracker</h2>
+                <div className="bg-white rounded-xl shadow-card p-4 transition-all duration-300">
+                  <h2 className="text-lg font-semibold flex items-center text-gray-800 mb-4">
+                    <Icon type="weight" className="mr-2 text-blue-600" /> Weight Tracker
+                  </h2>
                   
-                  <div className="flex space-x-2 mb-6">
-                    <input
-                      type="number"
-                      value={weight}
-                      onChange={(e) => setWeight(e.target.value)}
-                      placeholder="Weight in kg"
-                      className="border rounded p-2 flex-1"
-                    />
-                    <button 
-                      onClick={addWeightEntry}
-                      className="bg-blue-600 text-white px-4 py-2 rounded"
-                    >
-                      Save
-                    </button>
-                  </div>
-    
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm font-medium text-gray-600 mb-1">
-                      <span>Target Weight</span>
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Log Today's Weight
+                        </label>
+                        <div className="relative mt-1 rounded-md shadow-sm">
+                          <input
+                            type="number"
+                            value={weight}
+                            onChange={(e) => setWeight(e.target.value)}
+                            placeholder="Weight in kg"
+                            className="block w-full rounded-md border-gray-300 pl-4 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-12"
+                          />
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <span className="text-gray-500 sm:text-sm">kg</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-end">
+                        <button 
+                          onClick={addWeightEntry}
+                          className="flex justify-center items-center w-full h-12 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        >
+                          <Icon type="plus" className="mr-2" /> Save Entry
+                        </button>
+                      </div>
                     </div>
-                    <input
-                      type="number"
-                      value={targetWeight}
-                      onChange={(e) => setTargetWeight(e.target.value)}
-                      placeholder="Target weight in kg"
-                      className="border rounded p-2 w-full mb-4"
-                    />
+                    
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Target Weight
+                      </label>
+                      <div className="relative mt-1 rounded-md shadow-sm">
+                        <input
+                          type="number"
+                          value={targetWeight}
+                          onChange={(e) => setTargetWeight(e.target.value)}
+                          placeholder="Target weight in kg"
+                          className="block w-full rounded-md border-gray-300 pl-4 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-12"
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                          <span className="text-gray-500 sm:text-sm">kg</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  {/* Simple bar chart representation */}
+                  {/* Weight chart */}
                   {weightEntries.length > 1 && (
-                    <div className="mt-4 mb-6">
-                      <h3 className="font-medium mb-2">Weight Trend</h3>
-                      <div className="h-40 flex items-end space-x-1">
-                        {weightEntries
-                          .sort((a, b) => new Date(a.date) - new Date(b.date))
-                          .slice(-10) // Show last 10 entries
-                          .map((entry, index) => {
-                            const minWeight = Math.min(...weightEntries.map(e => e.weight));
-                            const maxWeight = Math.max(...weightEntries.map(e => e.weight));
-                            const range = maxWeight - minWeight || 1;
-                            const heightPercent = ((entry.weight - minWeight) / range) * 70 + 20; // 20-90% height
-                            
-                            return (
-                              <div key={index} className="flex flex-col items-center">
-                                <div className="text-xs text-gray-500 mb-1">{entry.weight}</div>
-                                <div 
-                                  className="w-6 bg-blue-500 rounded-t" 
-                                  style={{ height: `${heightPercent}%` }}
-                                ></div>
-                                <div className="text-xs text-gray-500 mt-1 transform -rotate-45 origin-top-left">
-                                  {new Date(entry.date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                    <div className="mt-6 mb-6">
+                      <h3 className="font-medium mb-4 text-gray-700 flex items-center">
+                        <Icon type="chart" className="mr-2 text-blue-600" /> Weight Trend
+                      </h3>
+                      
+                      <div className="bg-white p-3 border border-gray-200 rounded-lg">
+                        <div className="h-60 flex items-end space-x-1 overflow-x-auto pb-6 pt-4 px-2">
+                          {weightEntries
+                            .sort((a, b) => new Date(a.date) - new Date(b.date))
+                            .slice(-14) // Show last 14 entries
+                            .map((entry, index) => {
+                              const minWeight = Math.min(...weightEntries.map(e => e.weight));
+                              const maxWeight = Math.max(...weightEntries.map(e => e.weight));
+                              const range = maxWeight - minWeight || 1;
+                              const heightPercent = ((entry.weight - minWeight) / range) * 70 + 20; // 20-90% height
+                              
+                              const isToday = entry.date === selectedDate;
+                              
+                              return (
+                                <div key={index} className="flex flex-col items-center min-w-max">
+                                  <div className="text-xs text-gray-500 mb-1">{entry.weight}</div>
+                                  <div 
+                                    className={`w-10 rounded-t chart-bar ${isToday ? 'bg-blue-600' : 'bg-blue-400'}`}
+                                    style={{ height: `${heightPercent}%` }}
+                                  ></div>
+                                  <div className="text-xs text-gray-500 mt-2 transform -rotate-45 origin-top-left whitespace-nowrap">
+                                    {formatShortDate(entry.date)}
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })
-                        }
+                              );
+                            })
+                          }
+                        </div>
                       </div>
                     </div>
                   )}
                   
                   {/* Weight history */}
                   <div className="mt-6">
-                    <h3 className="font-medium mb-2">Weight History</h3>
+                    <h3 className="font-medium mb-3 text-gray-700 flex items-center">
+                      <Icon type="calendar" className="mr-2 text-blue-600" /> Weight History
+                    </h3>
+                    
                     {weightEntries.length > 0 ? (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                      <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                         {[...weightEntries]
                           .sort((a, b) => new Date(b.date) - new Date(a.date))
-                          .map((entry, index) => (
-                            <div key={index} className="flex justify-between p-2 bg-gray-50 rounded">
-                              <span>{formatDate(entry.date)}</span>
-                              <span className="font-medium">{entry.weight} kg</span>
-                            </div>
-                          ))
+                          .map((entry, index) => {
+                            const isToday = entry.date === selectedDate;
+                            const prevEntry = index < weightEntries.length - 1 ? weightEntries.sort((a, b) => new Date(b.date) - new Date(a.date))[index + 1] : null;
+                            const weightDiff = prevEntry ? (entry.weight - prevEntry.weight).toFixed(1) : null;
+                            
+                            return (
+                              <div 
+                                key={index} 
+                                className={`flex justify-between p-3 rounded-lg ${
+                                  isToday ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-gray-50 hover:bg-gray-100'
+                                } transition-colors`}
+                              >
+                                <span>{formatDate(entry.date)}</span>
+                                <div>
+                                  <span className="font-medium">{entry.weight} kg</span>
+                                  {weightDiff && (
+                                    <span className={`ml-2 text-sm ${
+                                      parseFloat(weightDiff) > 0 
+                                        ? 'text-red-500' 
+                                        : parseFloat(weightDiff) < 0 
+                                          ? 'text-green-500' 
+                                          : 'text-gray-500'
+                                    }`}>
+                                      {parseFloat(weightDiff) > 0 ? '+' : ''}
+                                      {weightDiff} kg
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
                         }
                       </div>
                     ) : (
-                      <div className="text-center text-gray-500 py-4">
-                        No entries yet. Start tracking your weight!
+                      <div className="text-center text-gray-500 py-6 bg-gray-50 rounded-lg">
+                        <Icon type="chart" className="text-gray-300 text-4xl mb-2" />
+                        <p>No entries yet. Start tracking your weight!</p>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
             )}
-    
+            
+            {/* Plan Tab */}
             {activeTab === 'plan' && (
               <div className="space-y-6">
-                <div className="bg-white rounded-lg shadow p-4">
-                  {/* Plan tabs */}
-                  <div className="flex border-b mb-4">
+                <div className="bg-white rounded-xl shadow-card p-4 transition-all duration-300">
+                  {/* Plan sub tabs */}
+                  <div className="flex mb-6 border-b overflow-x-auto hide-scrollbar">
                     <button 
-                      className={`py-2 px-4 ${mealPlanSubTab === 'schedule' ? 'text-blue-600 border-b-2 border-blue-600 font-medium' : 'text-gray-500'}`}
+                      className={`py-3 px-4 font-medium relative ${mealPlanSubTab === 'schedule' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                       onClick={() => setMealPlanSubTab('schedule')}
                     >
-                      Daily Schedule
+                      <div className="flex items-center">
+                        <Icon type="clock" className="mr-2" />
+                        <span>Daily Schedule</span>
+                      </div>
+                      {mealPlanSubTab === 'schedule' && <div className="nav-indicator"></div>}
                     </button>
                     <button 
-                      className={`py-2 px-4 ${mealPlanSubTab === 'meals' ? 'text-blue-600 border-b-2 border-blue-600 font-medium' : 'text-gray-500'}`}
+                      className={`py-3 px-4 font-medium relative ${mealPlanSubTab === 'meals' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                       onClick={() => setMealPlanSubTab('meals')}
                     >
-                      Meal Options
+                      <div className="flex items-center">
+                        <Icon type="food" className="mr-2" />
+                        <span>Meal Options</span>
+                      </div>
+                      {mealPlanSubTab === 'meals' && <div className="nav-indicator"></div>}
                     </button>
                     <button 
-                      className={`py-2 px-4 ${mealPlanSubTab === 'exercise' ? 'text-blue-600 border-b-2 border-blue-600 font-medium' : 'text-gray-500'}`}
+                      className={`py-3 px-4 font-medium relative ${mealPlanSubTab === 'exercise' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                       onClick={() => setMealPlanSubTab('exercise')}
                     >
-                      Exercise Plan
+                      <div className="flex items-center">
+                        <Icon type="workout" className="mr-2" />
+                        <span>Exercise Plan</span>
+                      </div>
+                      {mealPlanSubTab === 'exercise' && <div className="nav-indicator"></div>}
                     </button>
                   </div>
                   
                   {/* Daily Schedule */}
                   {mealPlanSubTab === 'schedule' && (
-                    <div>
-                      <h2 className="text-lg font-semibold mb-4">Daily Schedule</h2>
+                    <div className="animate-fade-in">
+                      <h2 className="text-lg font-semibold mb-4 text-gray-800">Daily Schedule</h2>
                       
-                      <div className="mb-4">
-                        <div className="flex space-x-2 mb-2">
+                      <div className="mb-6">
+                        <div className="flex space-x-3 mb-4">
                           <button 
-                            className={`flex-1 py-2 px-4 rounded-lg ${isWeekday ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${isWeekday ? 'gradient-bg text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                             onClick={() => setIsWeekday(true)}
                           >
-                            Weekday
+                            <div className="flex items-center justify-center">
+                              <Icon type="calendar" className="mr-2" />
+                              <span>Weekday</span>
+                            </div>
                           </button>
                           <button 
-                            className={`flex-1 py-2 px-4 rounded-lg ${!isWeekday ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${!isWeekday ? 'gradient-bg text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                             onClick={() => setIsWeekday(false)}
                           >
-                            Weekend
+                            <div className="flex items-center justify-center">
+                              <Icon type="calendar" className="mr-2" />
+                              <span>Weekend</span>
+                            </div>
                           </button>
                         </div>
                       </div>
                       
                       <div className="space-y-4">
                         <div>
-                          <h3 className="font-medium flex items-center mb-2">
-                            <Icon type="clock" /> Daily Schedule
+                          <h3 className="font-medium flex items-center mb-3 text-gray-800">
+                            <Icon type="clock" className="mr-2 text-blue-600" /> Daily Timeline
                           </h3>
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {(isWeekday ? [
-                              { time: '6:30-7:00 AM', activity: 'Wake up, drink 500ml water' },
-                              { time: '7:00-7:45 AM', activity: 'Morning workout' },
-                              { time: '8:00-8:30 AM', activity: 'Breakfast' },
-                              { time: '9:30 AM', activity: 'Small snack + 250ml water before work' },
-                              { time: '10:00 AM - 6:00 PM', activity: 'Work hours' },
-                              { time: '1:00-1:30 PM', activity: 'Lunch (at work)' },
-                              { time: '4:00 PM', activity: 'Afternoon snack + 250ml water (at work)' },
-                              { time: '7:00-7:30 PM', activity: 'Evening workout/gym session' },
-                              { time: '8:00-8:30 PM', activity: 'Dinner' },
-                              { time: '9:00-9:30 PM', activity: 'Evening walk (20-30 minutes)' },
-                              { time: '10:00 PM', activity: 'Begin bedtime routine' },
-                              { time: '10:45-11:00 PM', activity: 'Sleep' }
+                              { time: '6:30-7:00 AM', activity: 'Wake up, drink 500ml water', icon: 'water' },
+                              { time: '7:00-7:45 AM', activity: 'Morning workout', icon: 'workout' },
+                              { time: '8:00-8:30 AM', activity: 'Breakfast', icon: 'food' },
+                              { time: '9:30 AM', activity: 'Small snack + 250ml water before work', icon: 'apple' },
+                              { time: '10:00 AM - 6:00 PM', activity: 'Work hours', icon: 'time' },
+                              { time: '1:00-1:30 PM', activity: 'Lunch (at work)', icon: 'food' },
+                              { time: '4:00 PM', activity: 'Afternoon snack + 250ml water (at work)', icon: 'carrot' },
+                              { time: '7:00-7:30 PM', activity: 'Evening workout/gym session', icon: 'workout' },
+                              { time: '8:00-8:30 PM', activity: 'Dinner', icon: 'food' },
+                              { time: '9:00-9:30 PM', activity: 'Evening walk (20-30 minutes)', icon: 'run' },
+                              { time: '10:00 PM', activity: 'Begin bedtime routine', icon: 'time' },
+                              { time: '10:45-11:00 PM', activity: 'Sleep', icon: 'time' }
                             ] : [
-                              { time: '7:30-8:00 AM', activity: 'Wake up, drink 500ml water' },
-                              { time: '8:30-9:30 AM', activity: 'Breakfast' },
-                              { time: '10:00-11:00 AM', activity: 'Extended workout/gym session' },
-                              { time: '12:00 PM', activity: 'Small snack + 250ml water' },
-                              { time: '1:30-2:00 PM', activity: 'Lunch' },
-                              { time: '4:30 PM', activity: 'Afternoon snack + 250ml water' },
-                              { time: '7:00-7:30 PM', activity: 'Dinner' },
-                              { time: '8:00-8:30 PM', activity: 'Evening walk (20-30 minutes)' },
-                              { time: '10:30 PM', activity: 'Begin bedtime routine' },
-                              { time: '11:15-11:30 PM', activity: 'Sleep' }
+                              { time: '7:30-8:00 AM', activity: 'Wake up, drink 500ml water', icon: 'water' },
+                              { time: '8:30-9:30 AM', activity: 'Breakfast', icon: 'food' },
+                              { time: '10:00-11:00 AM', activity: 'Extended workout/gym session', icon: 'workout' },
+                              { time: '12:00 PM', activity: 'Small snack + 250ml water', icon: 'apple' },
+                              { time: '1:30-2:00 PM', activity: 'Lunch', icon: 'food' },
+                              { time: '4:30 PM', activity: 'Afternoon snack + 250ml water', icon: 'carrot' },
+                              { time: '7:00-7:30 PM', activity: 'Dinner', icon: 'food' },
+                              { time: '8:00-8:30 PM', activity: 'Evening walk (20-30 minutes)', icon: 'run' },
+                              { time: '10:30 PM', activity: 'Begin bedtime routine', icon: 'time' },
+                              { time: '11:15-11:30 PM', activity: 'Sleep', icon: 'time' }
                             ]).map((item, index) => (
-                              <div key={index} className="flex p-2 bg-gray-50 rounded">
-                                <span className="font-medium w-36">{item.time}</span>
-                                <span>{item.activity}</span>
+                              <div key={index} className="flex p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div className="w-36 font-medium text-gray-800">{formatTime(item.time)}</div>
+                                <div className="flex-1 flex items-center">
+                                  <Icon type={item.icon} className="mr-2 text-blue-600" />
+                                  <span className="text-gray-700">{item.activity}</span>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -582,19 +1119,25 @@
                   
                   {/* Meal Options */}
                   {mealPlanSubTab === 'meals' && (
-                    <div>
-                      <h2 className="text-lg font-semibold mb-4">Meal Options</h2>
-                      <div className="space-y-4">
+                    <div className="animate-fade-in">
+                      <h2 className="text-lg font-semibold mb-4 text-gray-800">Meal Options</h2>
+                      <div className="space-y-6">
                         {Object.keys(mealOptions).map((mealType, index) => (
-                          <div key={index} className="border rounded-lg overflow-hidden">
-                            <div className="bg-blue-50 p-3 font-medium text-blue-800 border-b">
+                          <div key={index} className="border rounded-lg overflow-hidden shadow-sm">
+                            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-3 font-medium text-blue-800 border-b flex items-center">
+                              <Icon type="food" className="mr-2" />
                               {mealType}
                             </div>
-                            <div className="p-3 space-y-3">
+                            <div className="p-3 space-y-3 bg-white">
                               {mealOptions[mealType].map((meal, idx) => (
-                                <div key={idx} className="p-2 bg-gray-50 rounded">
-                                  <div className="font-medium">{meal.name} <span className="font-normal text-sm text-gray-500">({meal.calories} cal)</span></div>
-                                  <div className="text-sm text-gray-600 mt-1">{meal.description}</div>
+                                <div key={idx} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                  <div className="flex justify-between">
+                                    <div className="font-medium text-gray-800">{meal.name}</div>
+                                    <div className="text-sm px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                      {meal.calories} cal
+                                    </div>
+                                  </div>
+                                  <div className="text-sm text-gray-600 mt-2">{meal.description}</div>
                                 </div>
                               ))}
                             </div>
@@ -606,57 +1149,111 @@
                   
                   {/* Exercise Plan */}
                   {mealPlanSubTab === 'exercise' && (
-                    <div>
-                      <h2 className="text-lg font-semibold mb-4">Exercise Plan</h2>
+                    <div className="animate-fade-in">
+                      <h2 className="text-lg font-semibold mb-4 text-gray-800">Exercise Plan</h2>
                       
-                      <div className="mb-4">
-                        <div className="flex space-x-2 mb-2">
-                          <button 
-                            className={`flex-1 py-2 px-4 rounded-lg ${exercisePlanSubTab === 'beginner' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                            onClick={() => setExercisePlanSubTab('beginner')}
-                          >
-                            Beginner
-                          </button>
-                          <button 
-                            className={`flex-1 py-2 px-4 rounded-lg ${exercisePlanSubTab === 'intermediate' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                            onClick={() => setExercisePlanSubTab('intermediate')}
-                          >
-                            Intermediate
-                          </button>
-                          <button 
-                            className={`flex-1 py-2 px-4 rounded-lg ${exercisePlanSubTab === 'advanced' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                            onClick={() => setExercisePlanSubTab('advanced')}
-                          >
-                            Advanced
-                          </button>
-                        </div>
+                      <div className="flex space-x-2 mb-6 overflow-x-auto pb-1">
+                        <button 
+                          className={`py-2 px-4 rounded-lg whitespace-nowrap ${exercisePlanSubTab === 'beginner' ? 'gradient-bg text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                          onClick={() => setExercisePlanSubTab('beginner')}
+                        >
+                          <div className="flex items-center">
+                            <Icon type="star" className="mr-2" />
+                            <span>Beginner</span>
+                          </div>
+                        </button>
+                        <button 
+                          className={`py-2 px-4 rounded-lg whitespace-nowrap ${exercisePlanSubTab === 'intermediate' ? 'gradient-bg text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                          onClick={() => setExercisePlanSubTab('intermediate')}
+                        >
+                          <div className="flex items-center">
+                            <Icon type="star" className="mr-2" />
+                            <span>Intermediate</span>
+                          </div>
+                        </button>
+                        <button 
+                          className={`py-2 px-4 rounded-lg whitespace-nowrap ${exercisePlanSubTab === 'advanced' ? 'gradient-bg text-white' : 'bg-gray-100 text-gray-700hover:bg-gray-200'}`}
+                          onClick={() => setExercisePlanSubTab('advanced')}
+                        >
+                          <div className="flex items-center">
+                            <Icon type="star" className="mr-2" />
+                            <span>Advanced</span>
+                          </div>
+                        </button>
                       </div>
                       
-                      <div className="space-y-4">
-                        <div className="p-3 bg-blue-50 rounded-lg">
-                          <h3 className="font-medium text-blue-800">{exercisePlans[exercisePlanSubTab].title}</h3>
+                      <div className="space-y-6">
+                        <div className="p-4 bg-blue-50 rounded-lg">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                              <Icon type="certificate" />
+                            </div>
+                            <h3 className="font-medium text-blue-800">{exercisePlans[exercisePlanSubTab].title}</h3>
+                          </div>
                         </div>
-                        
-                        <div className="border-l-4 border-green-400 pl-3 py-1">
-                          <h4 className="font-medium">Cardio Plan</h4>
-                          <p className="text-gray-700 mt-1">{exercisePlans[exercisePlanSubTab].cardio}</p>
-                        </div>
-                        
-                        <div className="border-l-4 border-orange-400 pl-3 py-1">
-                          <h4 className="font-medium">Strength Training</h4>
-                          <p className="text-gray-700 mb-2">Frequency: {exercisePlans[exercisePlanSubTab].frequency}</p>
+                      
+                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Cardio Plan */}
+                          <div className="bg-white border border-green-200 rounded-lg overflow-hidden shadow-sm">
+                            <div className="bg-green-50 p-3 font-medium text-green-800 border-b border-green-200">
+                              <div className="flex items-center">
+                                <Icon type="run" className="mr-2" />
+                                <span>Cardio Plan</span>
+                              </div>
+                            </div>
+                            <div className="p-4">
+                              <p className="text-gray-700">{exercisePlans[exercisePlanSubTab].cardio}</p>
+                              
+                              <div className="mt-3 py-2 px-3 bg-gray-50 rounded border-l-4 border-green-400 text-sm">
+                                <p className="text-gray-600">
+                                  <strong>Tip:</strong> Split your sessions throughout the week and gradually increase intensity.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                           
-                          <div className="space-y-2 mt-3">
+                          {/* Strength Training Frequency */}
+                          <div className="bg-white border border-orange-200 rounded-lg overflow-hidden shadow-sm">
+                            <div className="bg-orange-50 p-3 font-medium text-orange-800 border-b border-orange-200">
+                              <div className="flex items-center">
+                                <Icon type="calendar" className="mr-2" />
+                                <span>Training Frequency</span>
+                              </div>
+                            </div>
+                            <div className="p-4">
+                              <p className="text-gray-700 mb-2">{exercisePlans[exercisePlanSubTab].frequency}</p>
+                              
+                              <div className="mt-3 py-2 px-3 bg-gray-50 rounded border-l-4 border-orange-400 text-sm">
+                                <p className="text-gray-600">
+                                  <strong>Note:</strong> {exercisePlans[exercisePlanSubTab].notes}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Strength Training Exercises */}
+                        <div className="mt-6">
+                          <h3 className="font-medium mb-4 text-gray-700 flex items-center">
+                            <Icon type="workout" className="mr-2 text-blue-600" /> Strength Training Exercises
+                          </h3>
+                          
+                          <div className="space-y-3">
                             {exercisePlans[exercisePlanSubTab].strength.map((exercise, idx) => (
-                              <div key={idx} className="flex p-2 bg-gray-50 rounded">
-                                <span className="font-medium w-48">{exercise.name}</span>
-                                <span className="text-gray-600">{exercise.sets}</span>
+                              <div key={idx} className="flex p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                                <span className="font-medium w-48 text-gray-800">{exercise.name}</span>
+                                <span className="text-gray-600 bg-white px-3 py-1 rounded-full text-sm">{exercise.sets}</span>
                               </div>
                             ))}
                           </div>
                           
-                          <div className="mt-3 text-sm text-gray-600 italic">
-                            <strong>Note:</strong> {exercisePlans[exercisePlanSubTab].notes}
+                          <div className="mt-6 flex justify-center">
+                            <div className="bg-blue-50 p-4 rounded-lg max-w-md text-center">
+                              <p className="text-blue-800 text-sm">
+                                <Icon type="info-circle" className="mr-2" />
+                                Remember to warm up before and cool down after each workout session.
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -667,29 +1264,28 @@
             )}
           </main>
     
-          {/* Navigation */}
-          <nav className="bg-white border-t flex">
-            <button 
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex flex-col items-center justify-center flex-1 py-2 ${activeTab === 'dashboard' ? 'text-blue-600' : 'text-gray-500'}`}
-            >
-              <span>📊</span>
-              <span className="text-xs mt-1">Dashboard</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('weight')}
-              className={`flex flex-col items-center justify-center flex-1 py-2 ${activeTab === 'weight' ? 'text-blue-600' : 'text-gray-500'}`}
-            >
-              <span>⚖️</span>
-              <span className="text-xs mt-1">Weight</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('plan')}
-              className={`flex flex-col items-center justify-center flex-1 py-2 ${activeTab === 'plan' ? 'text-blue-600' : 'text-gray-500'}`}
-            >
-              <span>📝</span>
-              <span className="text-xs mt-1">Plan</span>
-            </button>
+          {/* Bottom Navigation */}
+          <nav className="bg-white border-t shadow-lg">
+            <div className="container mx-auto max-w-3xl">
+              <div className="flex">
+                {navItems.map((item) => (
+                  <button 
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`flex flex-col items-center justify-center flex-1 py-3 relative ${
+                      activeTab === item.id ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <Icon type={item.icon} className={`text-lg ${activeTab === item.id ? 'animate-pulse-slow' : ''}`} />
+                    <span className="text-xs mt-1 font-medium">{item.label}</span>
+                    
+                    {activeTab === item.id && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 tab-highlight"></div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           </nav>
         </div>
       );
